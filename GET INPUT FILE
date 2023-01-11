@@ -1,0 +1,279 @@
+#include <iostream>
+#include <cstdlib>
+#include <fstream>
+#include <string>
+#include <cstring>
+
+using namespace std;
+
+struct node {
+    double burstTime;
+    double arivalTime;
+    double priority;
+    struct node *next;
+};
+
+
+node *header;
+
+int Option = 0;
+int modeChoice = 0;
+int preemptiveModeInt = 0;
+int quantum = 6;
+double pID = 1.0;
+double wt = 0;
+double avgWT = 0;
+bool menu = false;
+string preemptiveModeSTR;
+string schedulerMode;
+ofstream output;
+ifstream input;
+
+
+int list_is_empty(struct node *);
+
+void displaylist(struct node *);
+
+struct node *newnode(double, double, double);
+
+struct node *insertFront(struct node *, double, double, double);
+
+struct node *insertBack(struct node *, double, double, double);
+
+void insertAfter(struct node *, double, double, double);
+
+struct node *sortList(struct node *);
+
+struct node *sortPriority(struct node *);
+
+struct node *sortArivalTime(struct node *);
+
+int mainMenuFunction(string, string);
+
+int schedulingModeMenu();
+
+void roundRobinResult(struct node *);
+
+void roundrobinSM(const node *temp);
+
+void FCFSResult(node *temp);
+
+void SJF_NonePreemptiveResult(node *temp);
+
+void FCFSschedulingMethod(const node *temp);
+
+void copyLinkedList(struct node *, struct node *);
+
+void setOutputTXTpriority(ofstream &output, node *temp);
+
+void OutputTXTFCFS(ofstream &output, node *temp);
+
+void OutputTXTRoundRobin(ofstream &output, node *temp);
+
+
+//main method
+int main(int argc, char const *argv[]) {
+string line,file;
+char *p;
+    input.open("Input.txt");
+    if (input.is_open()){
+        while( !input.eof() ){
+            input>>line;
+            file += line + "\n";
+        }
+        char * cstr = new char [file.length()+1];
+        strcpy (cstr, file.c_str());
+
+  // cstr now contains a c-string copy of file
+
+  p = strtok (cstr,":");
+  while (p!=0)
+  {
+    cout << p << '\n';
+    p = strtok(NULL,":");
+  }
+
+  delete[] cstr;
+  
+    }
+    cout<<file<<endl<<endl;
+    cout<<p;
+    header = NULL;
+    int count = sizeof(p)/sizeof(p[0]);
+    while( count != 0){
+        header = insertFront(header,p[count],p[count - 1],p[count - 2]);
+        count =- 2;
+    }
+/*     header = insertFront(header, 5, 4, 2);
+    header = insertFront(header, 10, 3, 5);
+    header = insertFront(header, 2, 2, 4);
+    header = insertFront(header, 1, 1, 1);
+    header = insertFront(header, 10, 0, 3);
+ */
+    preemptiveModeSTR.assign("OFF");
+    schedulerMode.assign("NONE");
+
+
+    while (menu == false) {
+//load main menu
+        Option = mainMenuFunction(schedulerMode, preemptiveModeSTR);
+
+        switch (Option) {
+            case 1:
+                modeChoice = schedulingModeMenu();//load scheduling menu
+                if (modeChoice == 1) {
+                    schedulerMode.assign("FCFS Scheduler");
+                }//set scheduling mode to FCFS
+                else if (modeChoice == 2) {
+                    schedulerMode.assign("SJF Scheduler");
+                }//set scheduling mode to SJF
+                else if (modeChoice == 3) {
+                    schedulerMode.assign("Priority Scheduler");
+                }//set scheduling mode to Priority scheduler
+                else if (modeChoice == 4) {
+                    schedulerMode.assign("RR Scheduler");
+                }//set scheduling mode to RR
+                else {
+                    cout << "Enter a valid option" << endl;
+                    modeChoice = schedulingModeMenu();
+                }//if scheduling option doesn't exist loop the scheduling menu
+                break;
+            case 2:
+                if (modeChoice == 1) {
+                    cout << "Selected mode doesn't support Preemptive mode" << endl;
+                    preemptiveModeSTR.assign("OFF");
+                }//if FCFS is selected turn off preemptive mode
+                else if (modeChoice == 4) {
+                    cout << "Selected mode doesn't support Preemptive mode" << endl;
+                    preemptiveModeSTR.assign("OFF");
+                }//if SJF is selected turn off preemptive mode
+                else {
+                    cout << "==========[Preemptive mode(ON/OFF)]==========" << endl;
+                    cout << "0) OFF" << endl;
+                    cout << "1) ON" << endl;
+                    cin >> preemptiveModeInt;
+                    switch (preemptiveModeInt) {
+                        case 1:
+                            preemptiveModeSTR.assign("ON");
+                            break;
+                        case 0:
+                            preemptiveModeSTR.assign("OFF");
+                            break;
+                        default:
+                            cout << "Enter a valid option";
+
+                    }//turn preemptive mode
+                }
+                break;//trun preemptive mode on/off
+            case 3:
+                if (modeChoice == 1)//FCFS scheduling
+                {
+                    node *temp = header;
+                   
+                   
+                    cout << "Process scheduling method: " << schedulerMode << endl;
+                    cout << "Processes waiting time: " << endl;
+                    FCFSResult(temp);
+
+                    menu = true;
+                } else if (modeChoice == 2 && preemptiveModeInt == 0)//none preemptive priority scheduling
+                {
+                    node *temp = header;
+                    sortList(temp);
+                    cout << "Process scheduling method: " << schedulerMode << endl;
+                    cout << "Processes waiting time: " << endl;
+
+                    SJF_NonePreemptiveResult(temp);
+                    
+                   // OutputTXTFCFS(output,tempOut);
+                    menu = true;
+                } else if (modeChoice == 2 && preemptiveModeInt == 1) {
+
+                }
+                else if (modeChoice == 3 && preemptiveModeInt == 0)//none preemptive priority scheduling
+                {
+                    node *temp = header;
+                    sortPriority(temp);
+                    cout << "Process scheduling method: " << schedulerMode << endl;
+                    cout << "Processes waiting time: " << endl;
+                    FCFSResult(temp);
+                    
+                    menu = true;
+
+                } else if (modeChoice == 3 && preemptiveModeInt == 1) {
+
+                }
+                else if (modeChoice == 4 && preemptiveModeInt == 0)//round robin scheduling
+                     {
+
+                    cout << "Process scheduling method: " << schedulerMode << endl;
+                    cout << "Processes waiting time: " << endl;
+                    node *temporary = header;
+                    roundRobinResult(temporary);
+                    
+                    menu = true;
+
+                }
+                else {
+                    cout << "Select the right options" << endl;
+                    menu = false;
+                }
+
+
+                //menu = true;
+                break;//show the result on the console
+            case 4:
+
+                if (modeChoice == 1)
+                {
+
+                    node *temp = header;
+                    OutputTXTFCFS(output,temp);
+                }//display FCFS to output file
+                else if (modeChoice == 2 && preemptiveModeInt == 0)
+                {
+                    node *temp = header;
+                    sortList(temp);
+                    OutputTXTFCFS(output, temp);
+
+                }//display SJF non-preemptive mode to output file
+                else if (modeChoice == 2 && preemptiveModeInt == 1)
+                {
+                    /* code */
+                }//display SJF preemptive mode to output file
+               else if (modeChoice == 3 && preemptiveModeInt == 0)
+                {
+                    node *temp = header;
+                    setOutputTXTpriority(output, temp);
+
+
+                }//display priority mode to output file
+                else if (modeChoice == 3 && preemptiveModeInt == 1)
+                {
+                    
+                }//display priority preemptive mode to output file
+               else if (modeChoice == 4 && preemptiveModeInt == 0)
+                {
+                    node *temp = header;
+                    OutputTXTRoundRobin(output, temp);
+
+                }//display round robin to output file
+                else{
+                    output<<"Select a scheduling mode";
+                    cout<<"Select a scheduling mode";
+
+                }//if no scheduling mode is selected open the menu
+                
+
+              
+                cout << endl << "CPU Scheduling Simulator has been exited" << '\n';
+                menu = true;
+                exit(1);
+                break;//exit the program and calculate the result
+            default:
+                cout << "Enter an option in the menu" << '\n';
+        }//if main menu option does not exist run the loop again
+    }
+    output.close();
+    return 0;
+}
